@@ -66,6 +66,8 @@ from tests.typing import (
     WebSocketGenerator,
 )
 
+MAC_CONN = [["mac", "12:34:56:AB:CD:EF"]]
+
 TEST_SINGLE_CONFIGS = [
     (
         "homeassistant/device_automation/0AFFD2/bla1/config",
@@ -2245,21 +2247,26 @@ async def test_cleanup_device_multiple_config_entries(
         minor_version=mqtt.CONFIG_ENTRY_MINOR_VERSION,
     )
     config_entry.add_to_hass(hass)
-    device_entry = device_registry.async_get_or_create(
+    device_registry.async_get_or_create(
         config_entry_id=config_entry.entry_id,
         connections={("mac", "12:34:56:AB:CD:EF")},
     )
+
+    device_entry = device_registry.async_get_device(
+        connections={("mac", "12:34:56:AB:CD:EF")}
+    )
+
     assert device_entry is not None
 
     mqtt_config_entry = hass.config_entries.async_entries(mqtt.DOMAIN)[0]
 
     sensor_config = {
-        "device": {"connections": [["mac", "12:34:56:AB:CD:EF"]]},
+        "device": {"connections": MAC_CONN},
         "state_topic": "foobar/sensor",
         "unique_id": "unique",
     }
     tag_config = {
-        "device": {"connections": [["mac", "12:34:56:AB:CD:EF"]]},
+        "device": {"connections": MAC_CONN},
         "topic": "test-topic",
     }
     trigger_config = {
@@ -2267,17 +2274,19 @@ async def test_cleanup_device_multiple_config_entries(
         "topic": "test-topic",
         "type": "foo",
         "subtype": "bar",
-        "device": {"connections": [["mac", "12:34:56:AB:CD:EF"]]},
+        "device": {"connections": MAC_CONN},
     }
 
-    sensor_data = json.dumps(sensor_config)
-    tag_data = json.dumps(tag_config)
-    trigger_data = json.dumps(trigger_config)
-    async_fire_mqtt_message(hass, "homeassistant/sensor/bla/config", sensor_data)
-    async_fire_mqtt_message(hass, "homeassistant/tag/bla/config", tag_data)
     async_fire_mqtt_message(
-        hass, "homeassistant/device_automation/bla/config", trigger_data
+        hass, "homeassistant/sensor/bla/config", json.dumps(sensor_config)
     )
+    async_fire_mqtt_message(
+        hass, "homeassistant/tag/bla/config", json.dumps(tag_config)
+    )
+    async_fire_mqtt_message(
+        hass, "homeassistant/device_automation/bla/config", json.dumps(trigger_config)
+    )
+
     await hass.async_block_till_done()
 
     # Verify device and registry entries are created
@@ -2354,12 +2363,12 @@ async def test_cleanup_device_multiple_config_entries_mqtt(
     mqtt_config_entry = hass.config_entries.async_entries(mqtt.DOMAIN)[0]
 
     sensor_config = {
-        "device": {"connections": [["mac", "12:34:56:AB:CD:EF"]]},
+        "device": {"connections": MAC_CONN},
         "state_topic": "foobar/sensor",
         "unique_id": "unique",
     }
     tag_config = {
-        "device": {"connections": [["mac", "12:34:56:AB:CD:EF"]]},
+        "device": {"connections": MAC_CONN},
         "topic": "test-topic",
     }
     trigger_config = {
@@ -2367,7 +2376,7 @@ async def test_cleanup_device_multiple_config_entries_mqtt(
         "topic": "test-topic",
         "type": "foo",
         "subtype": "bar",
-        "device": {"connections": [["mac", "12:34:56:AB:CD:EF"]]},
+        "device": {"connections": MAC_CONN},
     }
 
     sensor_data = json.dumps(sensor_config)
@@ -2991,7 +3000,7 @@ async def test_clear_config_topic_disabled_entity(
             "identifiers": ["sbfspot_12345"],
             "name": "abc123",
             "sw_version": "1.0",
-            "connections": [["mac", "12:34:56:AB:CD:EF"]],
+            "connections": MAC_CONN,
         },
     }
     async_fire_mqtt_message(
@@ -3066,7 +3075,7 @@ async def test_clean_up_registry_monitoring(
             "identifiers": ["sbfspot_12345"],
             "name": "sbfspot_12345",
             "sw_version": "1.0",
-            "connections": [["mac", "12:34:56:AB:CD:EF"]],
+            "connections": MAC_CONN,
         },
     }
     # Publish it config
@@ -3116,7 +3125,7 @@ async def test_unique_id_collission_has_priority(
             "identifiers": ["sbfspot_12345"],
             "name": "abc123",
             "sw_version": "1.0",
-            "connections": [["mac", "12:34:56:AB:CD:EF"]],
+            "connections": MAC_CONN,
         },
     }
     # discover an entity that is not unique and disabled by default (part 1), will be added
