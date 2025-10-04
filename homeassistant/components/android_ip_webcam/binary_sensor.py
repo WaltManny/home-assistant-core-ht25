@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from math import isclose
+
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,
@@ -53,4 +55,5 @@ class IPWebcamBinarySensor(AndroidIPCamBaseEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool:
         """Return if motion is detected."""
-        return self.cam.get_sensor_value(MOTION_ACTIVE) == 1.0
+        value = float(self.cam.get_sensor_value(MOTION_ACTIVE) or 0.0)
+        return isclose(value, 1.0, rel_tol=1e-09, abs_tol=1e-06)
