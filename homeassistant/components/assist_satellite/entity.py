@@ -18,6 +18,7 @@ from homeassistant.components import conversation, media_source, stt, tts
 from homeassistant.components.assist_pipeline import (
     OPTION_PREFERRED,
     AudioSettings,
+    PipelineConfig,
     PipelineEvent,
     PipelineEventType,
     PipelineStage,
@@ -508,29 +509,31 @@ class AssistSatelliteEntity(entity.Entity):
                     self.hass,
                     async_pipeline_from_audio_stream(
                         self.hass,
-                        context=self._context,
-                        event_callback=self._internal_on_pipeline_event,
-                        stt_metadata=stt.SpeechMetadata(
-                            language="",  # set in async_pipeline_from_audio_stream
-                            format=stt.AudioFormats.WAV,
-                            codec=stt.AudioCodecs.PCM,
-                            bit_rate=stt.AudioBitRates.BITRATE_16,
-                            sample_rate=stt.AudioSampleRates.SAMPLERATE_16000,
-                            channel=stt.AudioChannels.CHANNEL_MONO,
+                        PipelineConfig(
+                            context=self._context,
+                            event_callback=self._internal_on_pipeline_event,
+                            stt_metadata=stt.SpeechMetadata(
+                                language="",  # set in async_pipeline_from_audio_stream
+                                format=stt.AudioFormats.WAV,
+                                codec=stt.AudioCodecs.PCM,
+                                bit_rate=stt.AudioBitRates.BITRATE_16,
+                                sample_rate=stt.AudioSampleRates.SAMPLERATE_16000,
+                                channel=stt.AudioChannels.CHANNEL_MONO,
+                            ),
+                            stt_stream=audio_stream,
+                            pipeline_id=self._resolve_pipeline(),
+                            conversation_id=session.conversation_id,
+                            device_id=device_id,
+                            satellite_id=self.entity_id,
+                            tts_audio_output=self.tts_options,
+                            wake_word_phrase=wake_word_phrase,
+                            audio_settings=AudioSettings(
+                                silence_seconds=self._resolve_vad_sensitivity()
+                            ),
+                            start_stage=start_stage,
+                            end_stage=end_stage,
+                            conversation_extra_system_prompt=extra_system_prompt,
                         ),
-                        stt_stream=audio_stream,
-                        pipeline_id=self._resolve_pipeline(),
-                        conversation_id=session.conversation_id,
-                        device_id=device_id,
-                        satellite_id=self.entity_id,
-                        tts_audio_output=self.tts_options,
-                        wake_word_phrase=wake_word_phrase,
-                        audio_settings=AudioSettings(
-                            silence_seconds=self._resolve_vad_sensitivity()
-                        ),
-                        start_stage=start_stage,
-                        end_stage=end_stage,
-                        conversation_extra_system_prompt=extra_system_prompt,
                     ),
                     f"{self.entity_id}_pipeline",
                 )
