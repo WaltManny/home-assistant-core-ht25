@@ -2,6 +2,7 @@
 
 import copy
 import json
+from math import isclose
 from typing import Any
 from unittest.mock import call, patch
 
@@ -1376,13 +1377,13 @@ async def test_get_target_temperature_low_high_with_templates(
     )
     state = hass.states.get(ENTITY_CLIMATE)
     assert state.attributes.get("target_temp_low") is None
-    assert state.attributes.get("target_temp_high") == 21.0
+    assert isclose(state.attributes.get("target_temp_high"), 21.0)
     async_fire_mqtt_message(
         hass, "temperature-state", '{"temp_low": "18", "temp_high": ""}'
     )
     state = hass.states.get(ENTITY_CLIMATE)
-    assert state.attributes.get("target_temp_low") == 18.0
-    assert state.attributes.get("target_temp_high") == 21.0
+    assert isclose(state.attributes.get("target_temp_low"), 18.0)
+    assert isclose(state.attributes.get("target_temp_high"), 21.0)
     assert "Could not parse temperature_low_state_template from" not in caplog.text
     assert "Could not parse temperature_high_state_template from" not in caplog.text
 
