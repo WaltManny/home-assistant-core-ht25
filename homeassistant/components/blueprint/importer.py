@@ -96,7 +96,6 @@ def _get_community_post_import_url(url: str) -> str:
 
 
 def _extract_blueprint_from_community_topic(
-    url: str,
     topic: dict,
 ) -> ImportedBlueprint:
     """Extract a blueprint from a community post JSON.

@@ -70,8 +70,7 @@ async def test_pipeline_from_audio_stream_auto(
     with patch(
         "homeassistant.components.tts.secrets.token_urlsafe", return_value="test_token"
     ):
-        await assist_pipeline.async_pipeline_from_audio_stream(
-            hass,
+        config = assist_pipeline.PipelineConfig(
             context=Context(),
             event_callback=events.append,
             stt_metadata=stt.SpeechMetadata(
@@ -85,6 +84,7 @@ async def test_pipeline_from_audio_stream_auto(
             stt_stream=audio_data(),
             audio_settings=assist_pipeline.AudioSettings(is_vad_enabled=False),
         )
+        await assist_pipeline.async_pipeline_from_audio_stream(hass, config)
 
     assert process_events(events) == snapshot
     assert len(mock_stt_provider_entity.received) == 2
@@ -137,8 +137,7 @@ async def test_pipeline_from_audio_stream_legacy(
         "homeassistant.components.tts.secrets.token_urlsafe", return_value="test_token"
     ):
         # Use the created pipeline
-        await assist_pipeline.async_pipeline_from_audio_stream(
-            hass,
+        config = assist_pipeline.PipelineConfig(
             context=Context(),
             event_callback=events.append,
             stt_metadata=stt.SpeechMetadata(
@@ -153,6 +152,7 @@ async def test_pipeline_from_audio_stream_legacy(
             pipeline_id=pipeline_id,
             audio_settings=assist_pipeline.AudioSettings(is_vad_enabled=False),
         )
+        await assist_pipeline.async_pipeline_from_audio_stream(hass, config)
 
     assert process_events(events) == snapshot
     assert len(mock_stt_provider.received) == 2
@@ -205,8 +205,7 @@ async def test_pipeline_from_audio_stream_entity(
         "homeassistant.components.tts.secrets.token_urlsafe", return_value="test_token"
     ):
         # Use the created pipeline
-        await assist_pipeline.async_pipeline_from_audio_stream(
-            hass,
+        config = assist_pipeline.PipelineConfig(
             context=Context(),
             event_callback=events.append,
             stt_metadata=stt.SpeechMetadata(
@@ -221,6 +220,7 @@ async def test_pipeline_from_audio_stream_entity(
             pipeline_id=pipeline_id,
             audio_settings=assist_pipeline.AudioSettings(is_vad_enabled=False),
         )
+        await assist_pipeline.async_pipeline_from_audio_stream(hass, config)
 
     assert process_events(events) == snapshot
     assert len(mock_stt_provider_entity.received) == 2
@@ -270,23 +270,23 @@ async def test_pipeline_from_audio_stream_no_stt(
     pipeline_id = msg["result"]["id"]
 
     # Try to use the created pipeline
+    config = assist_pipeline.PipelineConfig(
+        context=Context(),
+        event_callback=events.append,
+        stt_metadata=stt.SpeechMetadata(
+            language="en-UK",
+            format=stt.AudioFormats.WAV,
+            codec=stt.AudioCodecs.PCM,
+            bit_rate=stt.AudioBitRates.BITRATE_16,
+            sample_rate=stt.AudioSampleRates.SAMPLERATE_16000,
+            channel=stt.AudioChannels.CHANNEL_MONO,
+        ),
+        stt_stream=audio_data(),
+        pipeline_id=pipeline_id,
+        audio_settings=assist_pipeline.AudioSettings(is_vad_enabled=False),
+    )
     with pytest.raises(assist_pipeline.pipeline.PipelineRunValidationError):
-        await assist_pipeline.async_pipeline_from_audio_stream(
-            hass,
-            context=Context(),
-            event_callback=events.append,
-            stt_metadata=stt.SpeechMetadata(
-                language="en-UK",
-                format=stt.AudioFormats.WAV,
-                codec=stt.AudioCodecs.PCM,
-                bit_rate=stt.AudioBitRates.BITRATE_16,
-                sample_rate=stt.AudioSampleRates.SAMPLERATE_16000,
-                channel=stt.AudioChannels.CHANNEL_MONO,
-            ),
-            stt_stream=audio_data(),
-            pipeline_id=pipeline_id,
-            audio_settings=assist_pipeline.AudioSettings(is_vad_enabled=False),
-        )
+        await assist_pipeline.async_pipeline_from_audio_stream(hass, config)
 
     assert not events
 
@@ -310,22 +310,22 @@ async def test_pipeline_from_audio_stream_unknown_pipeline(
         yield b""
 
     # Try to use the created pipeline
+    config = assist_pipeline.PipelineConfig(
+        context=Context(),
+        event_callback=events.append,
+        stt_metadata=stt.SpeechMetadata(
+            language="en-UK",
+            format=stt.AudioFormats.WAV,
+            codec=stt.AudioCodecs.PCM,
+            bit_rate=stt.AudioBitRates.BITRATE_16,
+            sample_rate=stt.AudioSampleRates.SAMPLERATE_16000,
+            channel=stt.AudioChannels.CHANNEL_MONO,
+        ),
+        stt_stream=audio_data(),
+        pipeline_id="blah",
+    )
     with pytest.raises(assist_pipeline.PipelineNotFound):
-        await assist_pipeline.async_pipeline_from_audio_stream(
-            hass,
-            context=Context(),
-            event_callback=events.append,
-            stt_metadata=stt.SpeechMetadata(
-                language="en-UK",
-                format=stt.AudioFormats.WAV,
-                codec=stt.AudioCodecs.PCM,
-                bit_rate=stt.AudioBitRates.BITRATE_16,
-                sample_rate=stt.AudioSampleRates.SAMPLERATE_16000,
-                channel=stt.AudioChannels.CHANNEL_MONO,
-            ),
-            stt_stream=audio_data(),
-            pipeline_id="blah",
-        )
+        await assist_pipeline.async_pipeline_from_audio_stream(hass, config)
 
     assert not events
 
@@ -371,8 +371,7 @@ async def test_pipeline_from_audio_stream_wake_word(
     with patch(
         "homeassistant.components.tts.secrets.token_urlsafe", return_value="test_token"
     ):
-        await assist_pipeline.async_pipeline_from_audio_stream(
-            hass,
+        config = assist_pipeline.PipelineConfig(
             context=Context(),
             event_callback=events.append,
             stt_metadata=stt.SpeechMetadata(
@@ -390,6 +389,7 @@ async def test_pipeline_from_audio_stream_wake_word(
             ),
             audio_settings=assist_pipeline.AudioSettings(is_vad_enabled=False),
         )
+        await assist_pipeline.async_pipeline_from_audio_stream(hass, config)
 
     assert process_events(events) == snapshot
 
@@ -436,8 +436,7 @@ async def test_pipeline_save_audio(
             yield make_10ms_chunk(b"part2")
             yield b""
 
-        await assist_pipeline.async_pipeline_from_audio_stream(
-            hass,
+        config = assist_pipeline.PipelineConfig(
             context=Context(),
             event_callback=events.append,
             stt_metadata=stt.SpeechMetadata(
@@ -454,6 +453,7 @@ async def test_pipeline_save_audio(
             end_stage=assist_pipeline.PipelineStage.STT,
             audio_settings=assist_pipeline.AudioSettings(is_vad_enabled=False),
         )
+        await assist_pipeline.async_pipeline_from_audio_stream(hass, config)
 
         pipeline_dirs = list(temp_dir.iterdir())
 
@@ -524,8 +524,7 @@ async def test_pipeline_saved_audio_with_device_id(
                 code="timeout", message="timeout"
             ),
         ):
-            await assist_pipeline.async_pipeline_from_audio_stream(
-                hass,
+            config = assist_pipeline.PipelineConfig(
                 context=Context(),
                 event_callback=event_callback,
                 stt_metadata=stt.SpeechMetadata(
@@ -541,6 +540,7 @@ async def test_pipeline_saved_audio_with_device_id(
                 end_stage=assist_pipeline.PipelineStage.STT,
                 device_id=device_id,
             )
+            await assist_pipeline.async_pipeline_from_audio_stream(hass, config)
 
 
 async def test_pipeline_saved_audio_write_error(
@@ -574,8 +574,7 @@ async def test_pipeline_saved_audio_write_error(
 
         # Force a timeout during wake word detection
         with patch("wave.Wave_write.writeframes", raises=RuntimeError()):
-            await assist_pipeline.async_pipeline_from_audio_stream(
-                hass,
+            config = assist_pipeline.PipelineConfig(
                 context=Context(),
                 event_callback=event_callback,
                 stt_metadata=stt.SpeechMetadata(
@@ -590,6 +589,7 @@ async def test_pipeline_saved_audio_write_error(
                 start_stage=assist_pipeline.PipelineStage.WAKE_WORD,
                 end_stage=assist_pipeline.PipelineStage.STT,
             )
+            await assist_pipeline.async_pipeline_from_audio_stream(hass, config)
 
 
 async def test_pipeline_saved_audio_empty_queue(
@@ -637,8 +637,7 @@ async def test_pipeline_saved_audio_empty_queue(
             "homeassistant.components.assist_pipeline.pipeline._pipeline_debug_recording_thread_proc",
             proc_wrapper,
         ):
-            await assist_pipeline.async_pipeline_from_audio_stream(
-                hass,
+            config = assist_pipeline.PipelineConfig(
                 context=Context(),
                 event_callback=event_callback,
                 stt_metadata=stt.SpeechMetadata(
@@ -653,6 +652,7 @@ async def test_pipeline_saved_audio_empty_queue(
                 start_stage=assist_pipeline.PipelineStage.WAKE_WORD,
                 end_stage=assist_pipeline.PipelineStage.STT,
             )
+            await assist_pipeline.async_pipeline_from_audio_stream(hass, config)
 
 
 async def test_pipeline_from_audio_stream_with_cloud_auth_fail(
@@ -673,8 +673,7 @@ async def test_pipeline_from_audio_stream_with_cloud_auth_fail(
         "async_process_audio_stream",
         side_effect=hass_nabucasa.auth.Unauthenticated,
     ):
-        await assist_pipeline.async_pipeline_from_audio_stream(
-            hass,
+        config = assist_pipeline.PipelineConfig(
             context=Context(),
             event_callback=events.append,
             stt_metadata=stt.SpeechMetadata(
@@ -688,6 +687,7 @@ async def test_pipeline_from_audio_stream_with_cloud_auth_fail(
             stt_stream=audio_data(),
             audio_settings=assist_pipeline.AudioSettings(is_vad_enabled=False),
         )
+        await assist_pipeline.async_pipeline_from_audio_stream(hass, config)
 
     assert process_events(events) == snapshot
     assert len(events) == 4  # run start, stt start, error, run end

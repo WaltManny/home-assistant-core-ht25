@@ -19,6 +19,7 @@ from homeassistant.components.assist_pipeline import (
     async_update_pipeline,
     vad,
 )
+from homeassistant.components.assist_pipeline.pipeline import PipelineUpdate
 from homeassistant.components.assist_satellite import (
     AssistSatelliteAnnouncement,
     AssistSatelliteAnswer,
@@ -48,13 +49,12 @@ def mock_chat_session_conversation_id() -> Generator[Mock]:
 @pytest.fixture(autouse=True)
 async def set_pipeline_tts(hass: HomeAssistant, init_components: ConfigEntry) -> None:
     """Set up a pipeline with a TTS engine."""
-    await async_update_pipeline(
-        hass,
-        async_get_pipeline(hass),
+    update_options = PipelineUpdate(
         tts_engine="tts.mock_entity",
         tts_language="en",
         tts_voice="test-voice",
     )
+    await async_update_pipeline(hass, async_get_pipeline(hass), update_options)
 
 
 async def test_entity_state(
@@ -710,10 +710,13 @@ async def test_start_conversation(
         assert entity.state == AssistSatelliteState.RESPONDING
         await original_start_conversation(start_announcement)
 
+    update_options = PipelineUpdate(
+        conversation_engine="conversation.some_llm",
+    )
     await async_update_pipeline(
         hass,
         async_get_pipeline(hass),
-        conversation_engine="conversation.some_llm",
+        update_options,
     )
 
     with (
@@ -774,10 +777,14 @@ async def test_start_conversation_default_preannounce(
     async def async_start_conversation(start_announcement):
         assert PREANNOUNCE_URL in start_announcement.preannounce_media_id
 
+    update_options = PipelineUpdate(
+        conversation_engine="conversation.some_llm",
+    )
+
     await async_update_pipeline(
         hass,
         async_get_pipeline(hass),
-        conversation_engine="conversation.some_llm",
+        update_options,
     )
 
     with (
@@ -860,9 +867,9 @@ async def test_ask_question(
     entity_id = "assist_satellite.test_entity"
     question_text = "What kind of music would you like to listen to?"
 
-    await async_update_pipeline(
-        hass, async_get_pipeline(hass), stt_engine="test-stt-engine", stt_language="en"
-    )
+    update_options = PipelineUpdate(stt_engine="test-stt-engine", stt_language="en")
+
+    await async_update_pipeline(hass, async_get_pipeline(hass), update_options)
 
     async def speech_to_text(self, *args, **kwargs):
         self.process_event(

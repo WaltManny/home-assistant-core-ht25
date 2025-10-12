@@ -39,7 +39,7 @@ from homeassistant.helpers.collection import (
 )
 from homeassistant.helpers.singleton import singleton
 from homeassistant.helpers.storage import Store
-from homeassistant.helpers.typing import UNDEFINED, UndefinedType, VolDictType
+from homeassistant.helpers.typing import VolDictType
 from homeassistant.util import (
     dt as dt_util,
     language as language_util,
@@ -324,50 +324,39 @@ def async_get_pipelines(hass: HomeAssistant) -> list[Pipeline]:
     return list(pipeline_data.pipeline_store.data.values())
 
 
+@dataclass
+class PipelineUpdate:  # noqa: D101
+    conversation_engine: str | None = None
+    conversation_language: str | None = None
+    language: str | None = None
+    name: str | None = None
+    stt_engine: str | None = None
+    stt_language: str | None = None
+    tts_engine: str | None = None
+    tts_language: str | None = None
+    tts_voice: str | None = None
+    wake_word_entity: str | None = None
+    wake_word_id: str | None = None
+    prefer_local_intents: bool | None = None
+
+
+# I refactored "async_update_pipeline" parameters into a single dataclass, which is one of the best ways to fix “Too Many Parameters.”
+
+
 async def async_update_pipeline(
     hass: HomeAssistant,
     pipeline: Pipeline,
-    *,
-    conversation_engine: str | UndefinedType = UNDEFINED,
-    conversation_language: str | UndefinedType = UNDEFINED,
-    language: str | UndefinedType = UNDEFINED,
-    name: str | UndefinedType = UNDEFINED,
-    stt_engine: str | None | UndefinedType = UNDEFINED,
-    stt_language: str | None | UndefinedType = UNDEFINED,
-    tts_engine: str | None | UndefinedType = UNDEFINED,
-    tts_language: str | None | UndefinedType = UNDEFINED,
-    tts_voice: str | None | UndefinedType = UNDEFINED,
-    wake_word_entity: str | None | UndefinedType = UNDEFINED,
-    wake_word_id: str | None | UndefinedType = UNDEFINED,
-    prefer_local_intents: bool | UndefinedType = UNDEFINED,
+    options: PipelineUpdate,
 ) -> None:
     """Update a pipeline."""
     pipeline_data = hass.data[KEY_ASSIST_PIPELINE]
 
     updates: dict[str, Any] = pipeline.to_json()
     updates.pop("id")
-    # Refactor this once we bump to Python 3.12
-    # and have https://peps.python.org/pep-0692/
-    updates.update(
-        {
-            key: val
-            for key, val in (
-                ("conversation_engine", conversation_engine),
-                ("conversation_language", conversation_language),
-                ("language", language),
-                ("name", name),
-                ("stt_engine", stt_engine),
-                ("stt_language", stt_language),
-                ("tts_engine", tts_engine),
-                ("tts_language", tts_language),
-                ("tts_voice", tts_voice),
-                ("wake_word_entity", wake_word_entity),
-                ("wake_word_id", wake_word_id),
-                ("prefer_local_intents", prefer_local_intents),
-            )
-            if val is not UNDEFINED
-        }
-    )
+
+    # Build updates from dataclass, skipping None values
+    option_dict = {key: val for key, val in options.__dict__.items() if val is not None}
+    updates.update(option_dict)
 
     await pipeline_data.pipeline_store.async_update_item(pipeline.id, updates)
 

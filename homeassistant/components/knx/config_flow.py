@@ -307,13 +307,14 @@ class KNXConfigFlow(ConfigFlow, domain=DOMAIN):
                 for tunnel in self._found_tunnels
                 if user_input[CONF_KNX_GATEWAY] == str(tunnel)
             )
-            connection_type = (
-                CONF_KNX_TUNNELING_TCP_SECURE
-                if self._selected_tunnel.tunnelling_requires_secure
-                else CONF_KNX_TUNNELING_TCP
-                if self._selected_tunnel.supports_tunnelling_tcp
-                else CONF_KNX_TUNNELING
-            )
+            # Refactor: avoid nested conditional expression
+            if self._selected_tunnel.tunnelling_requires_secure:
+                connection_type = CONF_KNX_TUNNELING_TCP_SECURE
+            elif self._selected_tunnel.supports_tunnelling_tcp:
+                connection_type = CONF_KNX_TUNNELING_TCP
+            else:
+                connection_type = CONF_KNX_TUNNELING
+
             self.new_entry_data = KNXConfigEntryData(
                 host=self._selected_tunnel.ip_addr,
                 port=self._selected_tunnel.port,

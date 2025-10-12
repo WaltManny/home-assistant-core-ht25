@@ -455,14 +455,13 @@ class HabiticaPartySensor(HabiticaPartyBase, SensorEntity):
         entity_picture = (
             pic if isinstance(pic, str) or pic is None else pic(self.coordinator.data)
         )
+        if not entity_picture:
+            return None
 
-        return (
-            None
-            if not entity_picture
-            else entity_picture
-            if entity_picture.startswith("data:image")
-            else f"{ASSETS_URL}{entity_picture}"
-        )
+        if entity_picture.startswith("data:image"):
+            return entity_picture
+
+        return f"{ASSETS_URL}{entity_picture}"
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:

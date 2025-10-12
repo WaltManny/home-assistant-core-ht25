@@ -22,6 +22,7 @@ from .const import (
     STT_ENTITY_UNIQUE_ID,
     TTS_ENTITY_UNIQUE_ID,
 )
+from .pipeline import PipelineUpdate
 
 
 async def async_create_cloud_pipeline(hass: HomeAssistant) -> str | None:
@@ -103,4 +104,5 @@ async def async_migrate_cloud_pipeline_engine(
     pipelines = async_get_pipelines(hass)
     for pipeline in pipelines:
         if getattr(pipeline, pipeline_attribute) == DOMAIN:
-            await async_update_pipeline(hass, pipeline, **kwargs)
+            updates = PipelineUpdate(**kwargs)
+            await async_update_pipeline(hass, pipeline, updates)
